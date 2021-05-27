@@ -27,8 +27,14 @@ namespace Emby.Plugins.JavScraper.Scrapers
         /// 构造
         /// </summary>
         /// <param name="handler"></param>
-        public Jav123(ILogger log = null)
-            : base("https://www.jav321.com/", log)
+        public Jav123(
+#if __JELLYFIN__
+            ILoggerFactory logManager
+#else
+            ILogManager logManager
+#endif
+            )
+            : base("https://www.jav321.com/", logManager.CreateLogger<Jav123>())
         {
         }
 
@@ -147,7 +153,7 @@ namespace Emby.Plugins.JavScraper.Scrapers
 
             List<string> GetGenres()
             {
-                var v = GetValue("标签");
+                var v = GetValue("ジャンル");
                 if (string.IsNullOrWhiteSpace(v))
                     return null;
                 return v.Split(',').Select(o => o.Trim()).Distinct().ToList();
@@ -155,7 +161,7 @@ namespace Emby.Plugins.JavScraper.Scrapers
 
             List<string> GetActors()
             {
-                var v = GetValue("女优");
+                var v = GetValue("出演者");
                 if (string.IsNullOrWhiteSpace(v))
                     return null;
                 var ac = v.Split(',').Select(o => o.Trim()).Distinct().ToList();
@@ -174,11 +180,11 @@ namespace Emby.Plugins.JavScraper.Scrapers
                 Url = url,
                 Title = node.SelectSingleNode(".//h3/text()")?.InnerText?.Trim(),
                 Cover = GetCover(),
-                Num = GetValue("番号")?.ToUpper(),
-                Date = GetValue("发行日期"),
-                Runtime = GetValue("播放时长"),
-                Maker = GetValue("片商"),
-                Studio = GetValue("片商"),
+                Num = GetValue("品番")?.ToUpper(),
+                Date = GetValue("配信開始日"),
+                Runtime = GetValue("収録時間"),
+                Maker = GetValue("メーカー"),
+                Studio = GetValue("メーカー"),
                 Set = GetValue("系列"),
                 Director = GetValue("导演"),
                 Genres = GetGenres(),

@@ -64,7 +64,6 @@ namespace Emby.Plugins.JavScraper.Http
                                 var url = $"{sm}://{options.ProxyHost}:{options.ProxyPort}";
                                 p = hasCredential == false ? new WebProxy(url, true) :
                                     new WebProxy(url, true, new string[] { }, new NetworkCredential() { UserName = options.ProxyUserName, Password = options.ProxyPassword });
-                                ;
                             }
                             else
                                 p = hasCredential == false ? new HttpToSocks5Proxy(options.ProxyHost, options.ProxyPort) :
@@ -96,7 +95,7 @@ namespace Emby.Plugins.JavScraper.Http
             var options = Plugin.Instance.Configuration;
             if (options.ProxyType == (int)ProxyTypeEnum.None || options.EnableJsProxy)
                 return true;
-            if (options.IsJsProxyBypass(host.Host))
+            if (options.IsBypassed(host.Host))
                 return true;
 
             return proxy.IsBypassed(host);

@@ -2,20 +2,14 @@
 using MediaBrowser.Controller.Net;
 
 #if __JELLYFIN__
-
 using Microsoft.Extensions.Logging;
-
 #else
 using MediaBrowser.Model.Logging;
 #endif
 
 using MediaBrowser.Model.Services;
-using System.Net.Http;
-using System.Reflection;
 using System.Threading.Tasks;
-using MihaZupan;
-using Emby.Plugins.JavScraper.Scrapers;
-using Emby.Plugins.JavScraper.Http;
+using MediaBrowser.Model.Entities;
 
 namespace Emby.Plugins.JavScraper.Services
 {
@@ -33,9 +27,9 @@ namespace Emby.Plugins.JavScraper.Services
 
     public class ImageService : IService, IRequiresRequest
     {
+        private readonly ImageProxyService imageProxyService;
         private readonly IHttpResultFactory resultFactory;
         private readonly ILogger logger;
-        private HttpClientEx client;
 
         /// <summary>
         /// Gets or sets the request context.
@@ -45,17 +39,21 @@ namespace Emby.Plugins.JavScraper.Services
 
         public ImageService(
 #if __JELLYFIN__
-            ILoggerFactory logManager
+            ILoggerFactory logManager,
 #else
-            ILogManager logManager
+            ILogManager logManager,
+            ImageProxyService imageProxyService,
 #endif
-            ,
             IHttpResultFactory resultFactory
             )
         {
+#if __JELLYFIN__
+            imageProxyService = Plugin.Instance.ImageProxyService;
+#else
+            this.imageProxyService = imageProxyService;
+#endif
             this.resultFactory = resultFactory;
             this.logger = logManager.CreateLogger<ImageService>();
-            client = new HttpClientEx(client => client.DefaultRequestHeaders.UserAgent.TryParseAdd($"JavScraper v{Assembly.GetExecutingAssembly().GetName().Version}"));
         }
 
         public object Get(GetImageInfo request)
@@ -73,11 +71,11 @@ namespace Emby.Plugins.JavScraper.Services
             if (url.IsWebUrl() != true)
                 throw new ResourceNotFoundException();
 
-            var resp = await client.GetAsync(url);
-            if (resp.IsSuccessStatusCode == false)
+            var resp = await imageProxyService.GetImageResponse(url, ImageType.Backdrop, default);
+            if (!(resp?.ContentLength > 0))
                 throw new ResourceNotFoundException();
 
-            return resultFactory.GetResult(Request, await resp.Content.ReadAsByteArrayAsync(), resp.Content.Headers.ContentType.ToString());
+            return resultFactory.GetResult(Request, resp.Content, resp.ContentType);
         }
     }
 }
